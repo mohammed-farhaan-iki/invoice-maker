@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Invoice Maker</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.3/angular.min.js"></script>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 1000px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            
+            .invoice-header {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 30px;
+            }
+            
+            .company-info {
+                font-size: 14px;
+                line-height: 1.5;
+            }
+            
+            .company-name {
+                font-weight: bold;
+                font-size: 18px;
+                margin-bottom: 5px;
+            }
+            
+            .invoice-title {
+                text-align: right;
+                font-size: 24px;
+                font-weight: bold;
+                margin-bottom: 15px;
+            }
+            
+            .invoice-meta {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 22px;
+            }
+            
+            .invoice-meta label {
+                font-weight: bold;
+                display: block;
+                margin-bottom: 3px;
+                font-size: 12px;
+            }
+            
+            .invoice-meta input, .invoice-meta select {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+            }
+            
+            .bill-to {
+                margin: 20px 0;
+            }
+            
+            .bill-to label {
+                font-weight: bold;
+                display: block;
+                margin-bottom: 5px;
+            }
+            
+            .bill-to input, .bill-to textarea {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                margin-bottom: 10px;
+                font-size: 14px;
+            }
+            
+            .subject {
+                margin-bottom: 20px;
+            }
+            
+            .subject input {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+            }
+            
+            .items-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }
+            
+            .items-table th {
+                background-color: #f5f5f5;
+                padding: 10px;
+                text-align: left;
+                border: 1px solid #ddd;
+                font-size: 14px;
+            }
+            
+            .items-table td {
+                padding: 8px;
+                border: 1px solid #ddd;
+            }
+            
+            .items-table input {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+                box-sizing: border-box;
+            }
+            
+            .totals {
+                width: 100%;
+                max-width: 300px;
+                margin-left: auto;
+                margin-bottom: 20px;
+            }
+            
+            .totals-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px 0;
+                border-bottom: 1px solid #eee;
+                font-size: 14px;
+            }
+            
+            .totals-label {
+                font-weight: bold;
+            }
+            
+            .notes {
+                margin-top: 30px;
+            }
+            
+            .notes label {
+                font-weight: bold;
+                display: block;
+                margin-bottom: 5px;
+            }
+            
+            .notes textarea {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                min-height: 80px;
+                font-size: 14px;
+            }
+            
+            .add-item {
+                margin-top: 10px;
+                margin-bottom: 20px;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                background-color: #009e74;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 16px;
+                margin-top: 20px;
+            }
+            
+            .btn:hover {
+                background-color: #007a5a;
+            }
+            
+            .btn-outline {
+                background-color: transparent;
+                border: 1px solid #009e74;
+                color: #009e74;
+                padding: 8px 15px;
+            }
+            
+            .btn-outline:hover {
+                background-color: #f0f0f0;
+            }
+            
+            .invoice-controls {
+                text-align: right;
+                margin-top: 30px;
+            }
+            
+            .delete-btn {
+                color: #ff4444;
+                background: none;
+                border: none;
+                cursor: pointer;
+                font-size: 16px;
+            }
+            
+            input[readonly] {
+                background-color: #f9f9f9;
+            }
+        </style>
+    </head>
+    <body ng-app="invoiceApp" ng-controller="DocumentEditorController">
+        <div class="container">
+            <form name="documentForm" class="ng-pristine ng-invalid ng-invalid-required">
+                <div class="invoice-holder clearfix">
+                    <div class="invoice-header">
+                        <div class="company-info">
+                            <div class="company-name">Rayvag Global Consulting Group</div>
+                            <div>129 Omar Bin Al Khattab St - Deira</div>
+                            <div>Deira Dubai</div>
+                            <div>United Arab Emirates</div>
+                            <div>rayvagglobalconsultants@gmail.com</div>
+                        </div>
+                        
+                        <div class="invoice-details">
+                            <div class="invoice-title">INVOICE</div>
+                            <div class="invoice-meta">
+                                <div>
+                                    <label>Invoice #</label>
+                                    <input type="text" ng-model="document.number" placeholder="INV-000001" required>
+                                </div>
+                                <div>
+                                    <label>Balance Due</label>
+                                    <input type="number" ng-model="document.balance_adjustment" ng-change="updateCalculations()"step="0.01"placeholder="0.00">
+                                </div>
+                                <div>
+                                    <label>Invoice Date</label>
+                                    <input type="date" ng-model="document.date" required>
+                                </div>
+                                <div>
+                                    <label>Terms</label>
+                                    <input type="text" ng-model="document.terms" placeholder="Due on receipt">
+                                </div>
+                                <div>
+                                    <label>Due Date</label>
+                                    <input type="date" ng-model="document.due_date">
+                                </div>
+                                <div>
+                                    <label>Currency</label>
+                                    <select ng-model="document.currency" ng-change="updateCalculations()">
+                                        <option value="AED" selected>AED (د.إ)</option>
+                                        <option value="USD">USD ($)</option>
+                                        <option value="EUR">EUR (€)</option>
+                                        <option value="GBP">GBP (£)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bill-to">
+                        <label>Bill To</label>
+                        <textarea ng-model="document.bill_to" placeholder="Client name and address" rows="3" required></textarea>
+                        
+                        <label>Subject</label>
+                        <input type="text" ng-model="document.subject" placeholder="Subject of the invoice" required>
+                    </div>
+                    
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th width="5%">#</th>
+                                <th width="50%">Item & Description</th>
+                                <th width="10%">Qty</th>
+                                <th width="15%">Rate</th>
+                                <th width="15%">Amount</th>
+                                <th width="5%"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="item in document.items track by $index">
+                                <td>{{$index + 1}}</td>
+                                <td><input type="text" ng-model="item.description" placeholder="Item description" required></td>
+                                <td><input type="number" step="0.01" ng-model="item.quantity" min="0" ng-change="updateItemAmount(item); updateCalculations()"></td>
+                                <td><input type="number" step="0.01" ng-model="item.rate" min="0" ng-change="updateItemAmount(item); updateCalculations()"></td>
+                                <td><input type="text" ng-model="item.amount" readonly></td>
+                                <td><button type="button" class="delete-btn" ng-click="deleteLineItem($index)" ng-show="document.items.length > 1">✕</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <button type="button" class="btn btn-outline" ng-click="addLineItem()">+ Add Item</button>
+                    
+                    <div class="totals">
+                        <div class="totals-row">
+                            <span class="totals-label">Sub Total</span>
+                            <span>{{document.currency}} {{calculateSubtotal() | number:2}}</span>
+                        </div>
+                        <div class="totals-row">
+                            <span class="totals-label">Total</span>
+                            <span>{{document.currency}} {{calculateTotal() | number:2}}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="notes">
+                        <label>Notes</label>
+                        <textarea ng-model="document.notes" placeholder="Thanks for your business."></textarea>
+                    </div>
+                    
+                    <div class="invoice-controls">
+                        <button type="button" class="btn" ng-disabled="documentForm.$invalid" ng-click="saveAndDownloadPDF()">
+                            Download PDF
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <script>
+            // Initialize Angular app
+            var app = angular.module('invoiceApp', []);
+            
+            app.controller('DocumentEditorController', ['$scope', function($scope) {
+                // Initialize document with default values
+                $scope.document = {
+                    number: 'INV-000000',
+                    date: new Date().toISOString().split('T')[0],
+                    due_date: '',
+                    balance_adjustment: 0,
+                    terms: 'Due on receipt',
+                    currency: 'AED',
+                    bill_to: '[Name and Location]',
+                    subject: 'Corporate tax registration',
+                    notes: 'Thanks for your business.',
+                    items: [
+                        {
+                            description: 'Corporate Tax Registration',
+                            quantity: 1,
+                            rate: 75,
+                            amount: 75
+                        }
+                    ]
+                };
+                
+                // Initialize calculations
+                $scope.updateCalculations = function() {
+                    $scope.document.balance_adjustment = parseFloat($scope.document.balance_adjustment) || 0;                    
+                    // Update all item amounts
+                    $scope.document.items.forEach(function(item) {
+                        $scope.updateItemAmount(item);
+                    });
+                };
+                
+                // Calculate subtotal from all items
+                $scope.calculateSubtotal = function() {
+                    return $scope.document.items.reduce(function(total, item) {
+                        return total + (item.quantity * item.rate);
+                    }, 0);
+                };
+                
+                // Calculate total (subtotal + tax - discounts)
+                $scope.calculateTotal = function() {
+                    return $scope.calculateSubtotal() + ($scope.document.balance_adjustment || 0);
+                };
+                
+                // Add a new line item
+                $scope.addLineItem = function() {
+                    $scope.document.items.push({
+                        description: "",
+                        quantity: 1,
+                        rate: 0,
+                        amount: 0
+                    });
+                };
+                
+                // Delete a line item
+                $scope.deleteLineItem = function(index) {
+                    $scope.document.items.splice(index, 1);
+                    $scope.updateCalculations();
+                };
+                
+                // Update amount when quantity or rate changes
+                $scope.updateItemAmount = function(item) {
+                    item.amount = item.quantity * item.rate;
+                };
+                
+                // Format currency based on selected currency
+                $scope.formatCurrency = function(amount) {
+                    return $scope.document.currency + ' ' + parseFloat(amount).toFixed(2);
+                };
+                
+                // Generate PDF
+                $scope.saveAndDownloadPDF = function() {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    
+                    // Set initial position
+                    let yPos = 20;
+                    
+                    // Add company info
+                    doc.setFontSize(14);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Rayvag Global Consulting Group', 15, yPos);
+                    yPos += 7;
+                    
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(10);
+                    const companyInfo = [
+                        '129 Omar Bin Al Khattab St - Deira',
+                        'Deira Dubai',
+                        'United Arab Emirates',
+                        'rayvagglobalconsultants@gmail.com'
+                    ];
+                    
+                    companyInfo.forEach(line => {
+                        doc.text(line, 15, yPos);
+                        yPos += 5;
+                    });
+                    
+                    yPos += 10;
+
+                    
+                    // Add invoice title and details
+                    doc.setFontSize(20);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('INVOICE', 180, 20, { align: 'right' });
+                    
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(`Invoice #: ${$scope.document.number}`, 180, 30, { align: 'right' });
+                    doc.text(`Date: ${$scope.document.date ? String($scope.document.date).substring(0, 15) : 'N/A'}`, 180, 35, { align: 'right' });
+                    doc.text(`Due Date: ${$scope.document.due_date ? String($scope.document.due_date).substring(0, 15) : 'N/A'}`, 180, 40, { align: 'right' });
+                    doc.text(`Terms: ${$scope.document.terms}`, 180, 45, { align: 'right' });
+                    
+                    yPos = 60;
+                    
+                    // Add bill to section
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Bill To:', 15, yPos);
+                    yPos += 7;
+                    
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'normal');
+                    const billToLines = $scope.document.bill_to.split('\n');
+                    billToLines.forEach(line => {
+                        doc.text(line, 15, yPos);
+                        yPos += 5;
+                    });
+                    
+                    yPos += 5;
+                    
+                    // Add subject
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(`Subject: ${$scope.document.subject}`, 15, yPos);
+                    yPos += 10;
+                    
+                    // Add items table header
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('#', 15, yPos);
+                    doc.text('Item & Description', 25, yPos);
+                    doc.text('Qty', 90, yPos);
+                    doc.text('Rate', 100, yPos);
+                    doc.text('Amount', 180, yPos, { align: 'right' });
+                    yPos += 7;
+                    
+                    // Add horizontal line
+                    doc.line(15, yPos, 195, yPos);
+                    yPos += 5;
+                    
+                    // Add items
+                    doc.setFont('helvetica', 'normal');
+                    $scope.document.items.forEach((item, index) => {
+                        doc.text((index + 1).toString(), 15, yPos);
+                        doc.text(item.description, 25, yPos);
+                        doc.text(item.quantity.toString(), 120, yPos);
+                        doc.text($scope.formatCurrency(item.rate), 140, yPos);
+                        doc.text($scope.formatCurrency(item.amount), 180, yPos, { align: 'right' });
+                        yPos += 7;
+                        
+                        // Add space between items
+                        if (index < $scope.document.items.length - 1) {
+                            yPos += 3;
+                        }
+                    });
+                    
+                    yPos += 15;
+                    
+                   // Add totals section to PDF
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'bold');
+                                    
+                    // Sub Total
+                    doc.text('Sub Total:', 150, yPos, { align: 'right' });
+                    doc.text($scope.formatCurrency($scope.calculateSubtotal()), 180, yPos, { align: 'right' });
+                    yPos += 7;
+                                    
+                    // Balance Adjustment (new line)
+                    doc.text('Balance Adjustment:', 150, yPos, { align: 'right' });
+                    doc.text($scope.formatCurrency($scope.document.balance_adjustment || 0), 180, yPos, { align: 'right' });
+                    yPos += 7;
+                                    
+                    // Total
+                    doc.text('Total:', 150, yPos, { align: 'right' });
+                    doc.text($scope.formatCurrency($scope.calculateTotal()), 180, yPos, { align: 'right' });
+                    yPos += 7;
+                    
+                    // Add notes
+                    if ($scope.document.notes) {
+                        doc.setFontSize(10);
+                        doc.setFont('helvetica', 'bold');
+                        doc.text('Notes:', 15, yPos);
+                        yPos += 7;
+                        
+                        doc.setFont('helvetica', 'normal');
+                        const notesLines = doc.splitTextToSize($scope.document.notes, 180);
+                        notesLines.forEach(line => {
+                            doc.text(line, 15, yPos);
+                            yPos += 7;
+                        });
+                    }
+                    
+                    // Save the PDF
+                    doc.save(`invoice_${$scope.document.number}.pdf`);
+                };
+                
+                // Initialize calculations
+                $scope.updateCalculations();
+            }]);
+        </script>
+    </body>
+</html>
