@@ -211,6 +211,7 @@
                 <div class="invoice-holder clearfix">
                     <div class="invoice-header">
                         <div class="company-info">
+                             <img src="https://raw.githubusercontent.com/mohammed-farhaan-iki/invoice-maker/main/rayvag_logo.jpg" alt="Rayvag Logo" style="max-height: 120px; margin-bottom: 10px;">
                             <div class="company-name">Rayvag Global Consulting Group</div>
                             <div>129 Omar Bin Al Khattab St - Deira</div>
                             <div>Deira Dubai</div>
@@ -313,218 +314,171 @@
         </div>
 
         <script>
-            // Initialize Angular app
-            var app = angular.module('invoiceApp', []);
-            
-            app.controller('DocumentEditorController', ['$scope', function($scope) {
-                // Initialize document with default values
-                $scope.document = {
-                    number: 'INV-000000',
-                    date: new Date().toISOString().split('T')[0],
-                    due_date: '',
-                    balance_adjustment: 0,
-                    terms: 'Due on receipt',
-                    currency: 'AED',
-                    bill_to: '[Name and Location]',
-                    subject: 'Corporate tax registration',
-                    notes: 'Thanks for your business.',
-                    items: [
-                        {
-                            description: 'Corporate Tax Registration',
-                            quantity: 1,
-                            rate: 75,
-                            amount: 75
-                        }
-                    ]
-                };
-                
-                // Initialize calculations
-                $scope.updateCalculations = function() {
-                    $scope.document.balance_adjustment = parseFloat($scope.document.balance_adjustment) || 0;                    
-                    // Update all item amounts
-                    $scope.document.items.forEach(function(item) {
-                        $scope.updateItemAmount(item);
-                    });
-                };
-                
-                // Calculate subtotal from all items
-                $scope.calculateSubtotal = function() {
-                    return $scope.document.items.reduce(function(total, item) {
-                        return total + (item.quantity * item.rate);
-                    }, 0);
-                };
-                
-                // Calculate total (subtotal + tax - discounts)
-                $scope.calculateTotal = function() {
-                    return $scope.calculateSubtotal() + ($scope.document.balance_adjustment || 0);
-                };
-                
-                // Add a new line item
-                $scope.addLineItem = function() {
-                    $scope.document.items.push({
-                        description: "",
-                        quantity: 1,
-                        rate: 0,
-                        amount: 0
-                    });
-                };
-                
-                // Delete a line item
-                $scope.deleteLineItem = function(index) {
-                    $scope.document.items.splice(index, 1);
-                    $scope.updateCalculations();
-                };
-                
-                // Update amount when quantity or rate changes
-                $scope.updateItemAmount = function(item) {
-                    item.amount = item.quantity * item.rate;
-                };
-                
-                // Format currency based on selected currency
-                $scope.formatCurrency = function(amount) {
-                    return $scope.document.currency + ' ' + parseFloat(amount).toFixed(2);
-                };
-                
-                // Generate PDF
-                $scope.saveAndDownloadPDF = function() {
-                    const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF();
-                    
-                    // Set initial position
-                    let yPos = 20;
-                    
-                    // Add company info
-                    doc.setFontSize(14);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text('Rayvag Global Consulting Group', 15, yPos);
-                    yPos += 7;
-                    
-                    doc.setFont('helvetica', 'normal');
-                    doc.setFontSize(10);
-                    const companyInfo = [
-                        '129 Omar Bin Al Khattab St - Deira',
-                        'Deira Dubai',
-                        'United Arab Emirates',
-                        'rayvagglobalconsultants@gmail.com'
-                    ];
-                    
-                    companyInfo.forEach(line => {
-                        doc.text(line, 15, yPos);
-                        yPos += 5;
-                    });
-                    
-                    yPos += 10;
+    var app = angular.module('invoiceApp', []);
+    app.controller('DocumentEditorController', ['$scope', function($scope) {
+        $scope.document = {
+            number: 'INV-000000',
+            date: new Date().toISOString().split('T')[0],
+            due_date: '',
+            balance_adjustment: 0,
+            terms: 'Due on receipt',
+            currency: 'AED',
+            bill_to: '[Name and Location]',
+            subject: 'Corporate tax registration',
+            notes: 'Thanks for your business.',
+            items: [
+                {
+                    description: 'Corporate Tax Registration',
+                    quantity: 1,
+                    rate: 75,
+                    amount: 75
+                }
+            ]
+        };
 
-                    
-                    // Add invoice title and details
-                    doc.setFontSize(20);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text('INVOICE', 180, 20, { align: 'right' });
-                    
-                    doc.setFontSize(10);
-                    doc.setFont('helvetica', 'normal');
-                    doc.text(`Invoice #: ${$scope.document.number}`, 180, 30, { align: 'right' });
-                    doc.text(`Date: ${$scope.document.date ? String($scope.document.date).substring(0, 15) : 'N/A'}`, 180, 35, { align: 'right' });
-                    doc.text(`Due Date: ${$scope.document.due_date ? String($scope.document.due_date).substring(0, 15) : 'N/A'}`, 180, 40, { align: 'right' });
-                    doc.text(`Terms: ${$scope.document.terms}`, 180, 45, { align: 'right' });
-                    
-                    yPos = 60;
-                    
-                    // Add bill to section
-                    doc.setFontSize(12);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text('Bill To:', 15, yPos);
+        $scope.updateCalculations = function() {
+            $scope.document.balance_adjustment = parseFloat($scope.document.balance_adjustment) || 0;
+            $scope.document.items.forEach(item => $scope.updateItemAmount(item));
+        };
+
+        $scope.calculateSubtotal = function() {
+            return $scope.document.items.reduce((total, item) => total + (item.quantity * item.rate), 0);
+        };
+
+        $scope.calculateTotal = function() {
+            return $scope.calculateSubtotal() + ($scope.document.balance_adjustment || 0);
+        };
+
+        $scope.addLineItem = function() {
+            $scope.document.items.push({ description: "", quantity: 1, rate: 0, amount: 0 });
+        };
+
+        $scope.deleteLineItem = function(index) {
+            $scope.document.items.splice(index, 1);
+            $scope.updateCalculations();
+        };
+
+        $scope.updateItemAmount = function(item) {
+            item.amount = item.quantity * item.rate;
+        };
+
+        $scope.formatCurrency = function(amount) {
+            return $scope.document.currency + ' ' + parseFloat(amount).toFixed(2);
+        };
+
+        $scope.saveAndDownloadPDF = async function() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const logoUrl = 'https://raw.githubusercontent.com/mohammed-farhaan-iki/invoice-maker/main/rayvag_logo.jpg';
+            const getImageBase64 = async (url) => {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+            };
+
+            const logoBase64 = await getImageBase64(logoUrl);
+            doc.addImage(logoBase64, 'JPEG', 15, 10, 30, 20);
+            let yPos = 35;
+
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Rayvag Global Consulting Group', 15, yPos);
+            yPos += 7;
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            const companyInfo = [
+                '129 Omar Bin Al Khattab St - Deira',
+                'Deira Dubai',
+                'United Arab Emirates',
+                'rayvagglobalconsultants@gmail.com'
+            ];
+            companyInfo.forEach(line => { doc.text(line, 15, yPos); yPos += 5; });
+            yPos += 10;
+
+            doc.setFontSize(20);
+            doc.setFont('helvetica', 'bold');
+            doc.text('INVOICE', 180, 20, { align: 'right' });
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Invoice #: ${$scope.document.number}`, 180, 30, { align: 'right' });
+            doc.text(`Date: ${$scope.document.date}`, 180, 35, { align: 'right' });
+            doc.text(`Due Date: ${$scope.document.due_date}`, 180, 40, { align: 'right' });
+            doc.text(`Terms: ${$scope.document.terms}`, 180, 45, { align: 'right' });
+
+            yPos = Math.max(yPos, 60);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Bill To:', 15, yPos);
+            yPos += 7;
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            $scope.document.bill_to.split('\n').forEach(line => { doc.text(line, 15, yPos); yPos += 5; });
+            yPos += 5;
+
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Subject: ${$scope.document.subject}`, 15, yPos);
+            yPos += 10;
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.text('#', 15, yPos);
+            doc.text('Item & Description', 25, yPos);
+            doc.text('Qty', 90, yPos);
+            doc.text('Rate', 100, yPos);
+            doc.text('Amount', 180, yPos, { align: 'right' });
+            yPos += 7;
+            doc.line(15, yPos, 195, yPos);
+            yPos += 5;
+
+            doc.setFont('helvetica', 'normal');
+            $scope.document.items.forEach((item, index) => {
+                doc.text((index + 1).toString(), 15, yPos);
+                doc.text(item.description, 25, yPos);
+                doc.text(item.quantity.toString(), 120, yPos);
+                doc.text($scope.formatCurrency(item.rate), 140, yPos);
+                doc.text($scope.formatCurrency(item.amount), 180, yPos, { align: 'right' });
+                yPos += 7;
+                if (index < $scope.document.items.length - 1) yPos += 3;
+            });
+
+            yPos += 15;
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Sub Total:', 150, yPos, { align: 'right' });
+            doc.text($scope.formatCurrency($scope.calculateSubtotal()), 180, yPos, { align: 'right' });
+            yPos += 7;
+            doc.text('Balance Adjustment:', 150, yPos, { align: 'right' });
+            doc.text($scope.formatCurrency($scope.document.balance_adjustment || 0), 180, yPos, { align: 'right' });
+            yPos += 7;
+            doc.text('Total:', 150, yPos, { align: 'right' });
+            doc.text($scope.formatCurrency($scope.calculateTotal()), 180, yPos, { align: 'right' });
+            yPos += 7;
+
+            if ($scope.document.notes) {
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Notes:', 15, yPos);
+                yPos += 7;
+                doc.setFont('helvetica', 'normal');
+                doc.splitTextToSize($scope.document.notes, 180).forEach(line => {
+                    doc.text(line, 15, yPos);
                     yPos += 7;
-                    
-                    doc.setFontSize(10);
-                    doc.setFont('helvetica', 'normal');
-                    const billToLines = $scope.document.bill_to.split('\n');
-                    billToLines.forEach(line => {
-                        doc.text(line, 15, yPos);
-                        yPos += 5;
-                    });
-                    
-                    yPos += 5;
-                    
-                    // Add subject
-                    doc.setFontSize(12);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text(`Subject: ${$scope.document.subject}`, 15, yPos);
-                    yPos += 10;
-                    
-                    // Add items table header
-                    doc.setFontSize(10);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text('#', 15, yPos);
-                    doc.text('Item & Description', 25, yPos);
-                    doc.text('Qty', 90, yPos);
-                    doc.text('Rate', 100, yPos);
-                    doc.text('Amount', 180, yPos, { align: 'right' });
-                    yPos += 7;
-                    
-                    // Add horizontal line
-                    doc.line(15, yPos, 195, yPos);
-                    yPos += 5;
-                    
-                    // Add items
-                    doc.setFont('helvetica', 'normal');
-                    $scope.document.items.forEach((item, index) => {
-                        doc.text((index + 1).toString(), 15, yPos);
-                        doc.text(item.description, 25, yPos);
-                        doc.text(item.quantity.toString(), 120, yPos);
-                        doc.text($scope.formatCurrency(item.rate), 140, yPos);
-                        doc.text($scope.formatCurrency(item.amount), 180, yPos, { align: 'right' });
-                        yPos += 7;
-                        
-                        // Add space between items
-                        if (index < $scope.document.items.length - 1) {
-                            yPos += 3;
-                        }
-                    });
-                    
-                    yPos += 15;
-                    
-                   // Add totals section to PDF
-                    doc.setFontSize(11);
-                    doc.setFont('helvetica', 'bold');
-                                    
-                    // Sub Total
-                    doc.text('Sub Total:', 150, yPos, { align: 'right' });
-                    doc.text($scope.formatCurrency($scope.calculateSubtotal()), 180, yPos, { align: 'right' });
-                    yPos += 7;
-                                    
-                    // Balance Adjustment (new line)
-                    doc.text('Balance Adjustment:', 150, yPos, { align: 'right' });
-                    doc.text($scope.formatCurrency($scope.document.balance_adjustment || 0), 180, yPos, { align: 'right' });
-                    yPos += 7;
-                                    
-                    // Total
-                    doc.text('Total:', 150, yPos, { align: 'right' });
-                    doc.text($scope.formatCurrency($scope.calculateTotal()), 180, yPos, { align: 'right' });
-                    yPos += 7;
-                    
-                    // Add notes
-                    if ($scope.document.notes) {
-                        doc.setFontSize(10);
-                        doc.setFont('helvetica', 'bold');
-                        doc.text('Notes:', 15, yPos);
-                        yPos += 7;
-                        
-                        doc.setFont('helvetica', 'normal');
-                        const notesLines = doc.splitTextToSize($scope.document.notes, 180);
-                        notesLines.forEach(line => {
-                            doc.text(line, 15, yPos);
-                            yPos += 7;
-                        });
-                    }
-                    
-                    // Save the PDF
-                    doc.save(`invoice_${$scope.document.number}.pdf`);
-                };
-                
-                // Initialize calculations
-                $scope.updateCalculations();
-            }]);
-        </script>
+                });
+            }
+
+            doc.save(`invoice_${$scope.document.number}.pdf`);
+        };
+
+        $scope.updateCalculations();
+    }]);
+    </script>
     </body>
 </html>
