@@ -228,7 +228,7 @@
                                 </div>
                                 <div>
                                     <label>Balance Due</label>
-                                    <input type="number" ng-model="document.balance_adjustment" ng-change="updateCalculations()"step="0.01"placeholder="0.00">
+                                    <input type="number" ng-model="document.balance_adjustment" ng-change="upCalculations()"step="0.01"placeholder="0.00">
                                 </div>
                                 <div>
                                     <label>Invoice Date</label>
@@ -408,7 +408,7 @@
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             doc.text(`Invoice #: ${$scope.document.number}`, 180, 30, { align: 'right' });
-            doc.text(`Date: ${$scope.document.date}`, 180, 35, { align: 'right' });
+            doc.text(`Date: ${$scope.document.date.toString().slice(0,10)}`, 180, 35, { align: 'right' });
             doc.text(`Due Date: ${$scope.document.due_date}`, 180, 40, { align: 'right' });
             doc.text(`Terms: ${$scope.document.terms}`, 180, 45, { align: 'right' });
 
