@@ -408,8 +408,20 @@
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             doc.text(`Invoice #: ${$scope.document.number}`, 180, 30, { align: 'right' });
-            doc.text(`Date: ${$scope.document.date.toString().slice(0,10)}`, 180, 35, { align: 'right' });
-            doc.text(`Due Date: ${$scope.document.due_date}`, 180, 40, { align: 'right' });
+            let d = new Date($scope.document.date);
+            let day = String(d.getDate()).padStart(2, '0');
+            let month = String(d.getMonth() + 1).padStart(2, '0');
+            let year = d.getFullYear();
+            let formattedDate = `${day}-${month}-${year}`;
+            doc.text(`Date: ${formattedDate}`, 180, 35, { align: 'right' });
+
+            let due_d = new Date($scope.document.due_date);
+            let due_day = String(due_d.getDate()).padStart(2, '0');
+            let due_month = String(due_d.getMonth() + 1).padStart(2, '0');
+            let due_year = due_d.getFullYear();
+            let formattedDueDate = `${due_day}-${due_month}-${due_year}`;
+            doc.text(`Due Date: ${formattedDueDate}`, 180, 40, { align: 'right' });
+
             doc.text(`Terms: ${$scope.document.terms}`, 180, 45, { align: 'right' });
 
             yPos = Math.max(yPos, 60);
