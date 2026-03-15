@@ -94,6 +94,7 @@
                 width: 100%;
                 border-collapse: collapse;
                 margin-bottom: 20px;
+                table-layout: fixed; /* Fixed layout for precise column control */
             }
             
             .items-table th {
@@ -107,7 +108,16 @@
             .items-table td {
                 padding: 8px;
                 border: 1px solid #ddd;
+                vertical-align: top; /* Align to top for multiline descriptions */
             }
+
+            /* Column widths: reduced description, increased rate & amount */
+            .items-table col.col-num         { width: 4%; }
+            .items-table col.col-description { width: 38%; }  /* reduced from ~50% */
+            .items-table col.col-qty         { width: 10%; }
+            .items-table col.col-rate        { width: 22%; }  /* increased */
+            .items-table col.col-amount      { width: 22%; }  /* increased */
+            .items-table col.col-action      { width: 4%; }
             
             .items-table input {
                 width: 100%;
@@ -116,6 +126,19 @@
                 border-radius: 4px;
                 font-size: 14px;
                 box-sizing: border-box;
+            }
+
+            /* Allow description textarea to expand for multiline */
+            .items-table textarea.description-input {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+                box-sizing: border-box;
+                min-height: 60px;
+                resize: vertical;
+                font-family: Arial, sans-serif;
             }
             
             .totals {
@@ -228,7 +251,7 @@
                                 </div>
                                 <div>
                                     <label>Balance Due</label>
-                                    <input type="number" ng-model="document.balance_adjustment" ng-change="upCalculations()"step="0.01"placeholder="0.00">
+                                    <input type="number" ng-model="document.balance_adjustment" ng-change="upCalculations()" step="0.01" placeholder="0.00">
                                 </div>
                                 <div>
                                     <label>Invoice Date</label>
@@ -249,6 +272,7 @@
                                         <option value="USD">USD ($)</option>
                                         <option value="EUR">EUR (€)</option>
                                         <option value="GBP">GBP (£)</option>
+                                        <option value="INR">INR (₹)</option>
                                     </select>
                                 </div>
                             </div>
@@ -264,20 +288,28 @@
                     </div>
                     
                     <table class="items-table">
+                        <colgroup>
+                            <col class="col-num">
+                            <col class="col-description">
+                            <col class="col-qty">
+                            <col class="col-rate">
+                            <col class="col-amount">
+                            <col class="col-action">
+                        </colgroup>
                         <thead>
                             <tr>
-                                <th width="5%">#</th>
-                                <th width="50%">Item & Description</th>
-                                <th width="10%">Qty</th>
-                                <th width="15%">Rate</th>
-                                <th width="15%">Amount</th>
-                                <th width="5%"></th>
+                                <th>#</th>
+                                <th>Item &amp; Description</th>
+                                <th>Qty</th>
+                                <th>Rate</th>
+                                <th>Amount</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr ng-repeat="item in document.items track by $index">
                                 <td>{{$index + 1}}</td>
-                                <td><input type="text" ng-model="item.description" placeholder="Item description" required></td>
+                                <td><textarea class="description-input" ng-model="item.description" placeholder="Item description" required></textarea></td>
                                 <td><input type="number" step="0.01" ng-model="item.quantity" min="0" ng-change="updateItemAmount(item); updateCalculations()"></td>
                                 <td><input type="number" step="0.01" ng-model="item.rate" min="0" ng-change="updateItemAmount(item); updateCalculations()"></td>
                                 <td><input type="text" ng-model="item.amount" readonly></td>
@@ -403,26 +435,26 @@
 
             doc.setFontSize(20);
             doc.setFont('helvetica', 'bold');
-            doc.text('INVOICE', 180, 20, { align: 'right' });
+            doc.text('INVOICE', 195, 20, { align: 'right' });
 
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Invoice #: ${$scope.document.number}`, 180, 30, { align: 'right' });
+            doc.text(`Invoice #: ${$scope.document.number}`, 195, 30, { align: 'right' });
             let d = new Date($scope.document.date);
             let day = String(d.getDate()).padStart(2, '0');
             let month = String(d.getMonth() + 1).padStart(2, '0');
             let year = d.getFullYear();
             let formattedDate = `${day}-${month}-${year}`;
-            doc.text(`Date: ${formattedDate}`, 180, 35, { align: 'right' });
+            doc.text(`Date: ${formattedDate}`, 195, 35, { align: 'right' });
 
             let due_d = new Date($scope.document.due_date);
             let due_day = String(due_d.getDate()).padStart(2, '0');
             let due_month = String(due_d.getMonth() + 1).padStart(2, '0');
             let due_year = due_d.getFullYear();
             let formattedDueDate = `${due_day}-${due_month}-${due_year}`;
-            doc.text(`Due Date: ${formattedDueDate}`, 180, 40, { align: 'right' });
+            doc.text(`Due Date: ${formattedDueDate}`, 195, 40, { align: 'right' });
 
-            doc.text(`Terms: ${$scope.document.terms}`, 180, 45, { align: 'right' });
+            doc.text(`Terms: ${$scope.document.terms}`, 195, 45, { align: 'right' });
 
             yPos = Math.max(yPos, 60);
             doc.setFontSize(12);
@@ -439,42 +471,58 @@
             doc.text(`Subject: ${$scope.document.subject}`, 15, yPos);
             yPos += 10;
 
+            // ── PDF Column layout ──────────────────────────────────────────
+            // #    | Item & Description | Qty | Rate        | Amount
+            // x=15 | x=25              | x=90| x=115       | x=195 (right-align)
+            // desc width reduced to ~60pt; rate & amount columns widened to ~35pt each
+            const COL_NUM   = 15;
+            const COL_DESC  = 25;
+            const COL_QTY   = 90;
+            const COL_RATE  = 115;
+            const COL_AMT   = 195;   // right-aligned anchor
+            const DESC_MAX_WIDTH = 60; // max width for description text wrap
+
             doc.setFontSize(10);
             doc.setFont('helvetica', 'bold');
-            doc.text('#', 15, yPos);
-            doc.text('Item & Description', 25, yPos);
-            doc.text('Qty', 90, yPos);
-            doc.text('Rate', 100, yPos);
-            doc.text('Amount', 180, yPos, { align: 'right' });
+            doc.text('#',               COL_NUM,  yPos);
+            doc.text('Item & Description', COL_DESC, yPos);
+            doc.text('Qty',             COL_QTY,  yPos);
+            doc.text('Rate',            COL_RATE, yPos);
+            doc.text('Amount',          COL_AMT,  yPos, { align: 'right' });
             yPos += 7;
             doc.line(15, yPos, 195, yPos);
             yPos += 5;
 
             doc.setFont('helvetica', 'normal');
             $scope.document.items.forEach((item, index) => {
-                doc.text((index + 1).toString(), 15, yPos);
-                doc.text(item.description, 25, yPos);
-                doc.text(item.quantity.toString(), 120, yPos);
-                doc.text($scope.formatCurrency(item.rate), 140, yPos);
-                doc.text($scope.formatCurrency(item.amount), 180, yPos, { align: 'right' });
-                yPos += 7;
-                if (index < $scope.document.items.length - 1) yPos += 3;
+                // Wrap the description text to fit within DESC_MAX_WIDTH
+                const descLines = doc.splitTextToSize(item.description, DESC_MAX_WIDTH);
+                const rowHeight = Math.max(descLines.length * 5, 7); // min 7pt row height
+
+                doc.text((index + 1).toString(),           COL_NUM,  yPos);
+                doc.text(descLines,                        COL_DESC, yPos); // multiline
+                doc.text(item.quantity.toString(),         COL_QTY,  yPos);
+                doc.text($scope.formatCurrency(item.rate), COL_RATE, yPos);
+                doc.text($scope.formatCurrency(item.amount), COL_AMT, yPos, { align: 'right' });
+
+                yPos += rowHeight + 3; // gap between rows
             });
 
-            yPos += 15;
+            yPos += 10;
             doc.setFontSize(11);
             doc.setFont('helvetica', 'bold');
-            doc.text('Sub Total:', 150, yPos, { align: 'right' });
-            doc.text($scope.formatCurrency($scope.calculateSubtotal()), 180, yPos, { align: 'right' });
+            doc.text('Sub Total:', 155, yPos, { align: 'right' });
+            doc.text($scope.formatCurrency($scope.calculateSubtotal()), COL_AMT, yPos, { align: 'right' });
             yPos += 7;
-            doc.text('Balance Adjustment:', 150, yPos, { align: 'right' });
-            doc.text($scope.formatCurrency($scope.document.balance_adjustment || 0), 180, yPos, { align: 'right' });
+            doc.text('Balance Adjustment:', 155, yPos, { align: 'right' });
+            doc.text($scope.formatCurrency($scope.document.balance_adjustment || 0), COL_AMT, yPos, { align: 'right' });
             yPos += 7;
-            doc.text('Total:', 150, yPos, { align: 'right' });
-            doc.text($scope.formatCurrency($scope.calculateTotal()), 180, yPos, { align: 'right' });
+            doc.text('Total:', 155, yPos, { align: 'right' });
+            doc.text($scope.formatCurrency($scope.calculateTotal()), COL_AMT, yPos, { align: 'right' });
             yPos += 7;
 
             if ($scope.document.notes) {
+                yPos += 5;
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'bold');
                 doc.text('Notes:', 15, yPos);
